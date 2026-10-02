@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Attendance</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;min-width:0;overflow-x:hidden}
+body{font-family:Arial,sans-serif;background:#f5f7fb;color:#202938}
+header{width:100%;background:#2563eb;color:white;padding:20px 16px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:25px;line-height:1.15}
+header p{margin:7px 0 0;font-size:14px;opacity:.92}
+nav{width:100%;display:flex;gap:7px;padding:9px 10px;background:white;border-bottom:1px solid #ddd;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;border:0;background:#eef2ff;color:#1e40af;padding:10px 13px;border-radius:10px;font-size:14px}
+nav button.active{background:#2563eb;color:white}
+main{width:100%;max-width:850px;margin:0 auto;padding:12px}
+.card{width:100%;background:white;border-radius:16px;padding:15px;margin-bottom:13px;box-shadow:0 2px 12px rgba(15,23,42,.07)}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+input,select{max-width:100%;padding:10px;border:1px solid #d5dbea;border-radius:10px;font-size:15px;background:white}
+button.primary{background:#2563eb;color:white;border:0;padding:11px 14px;border-radius:10px;font-size:14px}
+button.secondary{background:#eef2f7;border:0;padding:11px 14px;border-radius:10px;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.stat{min-width:0;background:#f8fafc;border-radius:13px;padding:13px 8px;text-align:center;font-size:14px;overflow:hidden}
+.stat b{display:block;font-size:25px;margin-top:5px}
+.student{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid #eee;min-width:0}
+.student:last-child{border-bottom:0}
+.student input{width:20px;height:20px;flex:0 0 auto}
+.name{flex:1;min-width:0;overflow:hidden}
+.name b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.small{font-size:12px;color:#64748b;margin-top:2px}
+.badge{padding:5px 8px;border-radius:8px;font-size:12px;background:#dcfce7;color:#166534;flex:0 0 auto}
+.warn{background:#fee2e2;color:#991b1b}
+.hidden{display:none}
+.empty{text-align:center;color:#64748b;padding:25px}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:10px}
+.day{min-width:0;min-height:42px;border:1px solid #e5e7eb;border-radius:7px;padding:5px 2px;text-align:center;font-size:12px}
+.day.present{background:#dcfce7}.day.absent{background:#fee2e2}.day.none{background:#f8fafc;color:#cbd5e1}
+.legend{font-size:12px;margin-top:8px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 3px 0 8px}.green{background:#86efac}.red{background:#fca5a5}
+table{width:100%;border-collapse:collapse;display:block;overflow-x:auto;white-space:nowrap}
+th,td{padding:9px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+h2{font-size:19px;margin:0 0 12px}
+h3{margin:10px 0}
+textarea{width:100%;min-height:70px;border:1px solid #d5dbea;border-radius:9px;padding:10px}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.ccard{border:1px solid #dbe4f0;border-radius:16px;overflow:hidden;margin-top:14px}
+.ccard h3{margin:0;padding:13px 14px;background:#f1f5f9;font-size:17px}
+.ct{display:table;width:100%;border-collapse:collapse;white-space:normal;overflow:visible}
+.ct th,.ct td{padding:11px 14px;border-bottom:1px solid #eef0f4;font-size:15px;text-align:center}
+.ct th:first-child,.ct td:first-child{text-align:left}
+.ct tr:last-child td{border-bottom:0}
+.ct td.p{font-weight:bold}.ct td.a{font-weight:bold;color:#b91c1c}
+.ct tr.go{cursor:pointer}
+.sum div{background:#f8fafc;border-radius:12px;padding:10px 4px;text-align:center;font-size:12px;color:#64748b}
+.sum b{display:block;font-size:22px;margin-top:3px;color:#202938}
+.sec{display:flex;align-items:center;gap:8px;background:#f8fafc;border-radius:11px;padding:11px 12px;margin-top:7px;cursor:pointer}
+.sec .lbl{flex:1;font-weight:bold}
+.sec .tot{font-size:12px;color:#64748b}
+.sec.off{opacity:.45;cursor:default}
+.sec .na{font-size:12px;color:#64748b}
+.ok{background:#dcfce7;color:#166534}
+#todayList,#studentList,#report,#followList,#dashLow{width:100%}
+
+@media (min-width:700px){
+  main{padding:18px}
+  .stats{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (max-width:420px){
+  header{padding:17px 14px}
+  header h1{font-size:23px}
+  main{padding:10px}
+  .card{padding:13px}
+  .stats{gap:7px}
+  .stat{padding:11px 5px;font-size:13px}
+  .stat b{font-size:23px}
+  .row input[type="date"]{width:100%}
+}
+#lock{position:fixed;inset:0;background:#f5f7fb;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+#lock .box{background:white;width:100%;max-width:360px;padding:24px;border-radius:18px;box-shadow:0 4px 20px rgba(15,23,42,.12);text-align:center}
+#lock input{width:100%;margin:12px 0}
+#lock .err{color:#b91c1c;font-size:13px;min-height:18px}
+</style>
+</head>
+<body>
+<div id="lock"><div class="box"><h2>🔐 School Attendance</h2><p>Enter passcode to continue</p><input id="passcode" type="password" inputmode="numeric" maxlength="4" placeholder="Passcode"><div id="passErr" class="err"></div><button class="primary" style="width:100%" onclick="unlock()">Unlock</button></div></div>
+<header><h1>📚 Sehachor Government Primary School</h1><p>Student Attendance • Created By Tarik Mahamud</p></header>
+<nav>
+<button class="tab active" onclick="showTab('dashboard',this)">🏠 ড্যাশবোর্ড</button>
+<button class="tab" onclick="showTab('today',this)">আজকের উপস্থিতি</button>
+<button class="tab" onclick="showTab('students',this)">শিক্ষার্থী</button>
+<button class="tab" onclick="showTab('reports',this)">রিপোর্ট</button>
+<button class="tab" onclick="showTab('follow',this)">ফলো-আপ</button>
+</nav>
+<main>
+<section id="dashboard">
+<div class="card">
+<h2>🏠 ড্যাশবোর্ড</h2>
+<div class="row" style="justify-content:flex-start">
+<select id="dashClass" onchange="renderDashboard()"><option value="all">সব শ্রেণি</option><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">১ম শ্রেণি</option><option value="2">২য় শ্রেণি</option><option value="3">৩য় শ্রেণি</option><option value="4">৪র্থ শ্রেণি</option><option value="5">৫ম শ্রেণি</option><option value="4+">৪+</option></select>
+<select id="dashSection" onchange="renderDashboard()"><option value="all">সব শাখা</option><option value="ক">শাখা ক</option><option value="খ">শাখা খ</option><option value="গ">শাখা গ</option></select>
+</div>
+<div class="sum">
+<div>🧑‍🎓 মোট শিক্ষার্থী<b id="dashTotal">0</b></div>
+<div>🟢 উপস্থিত<b id="dashPresent">0</b></div>
+<div>🔴 অনুপস্থিত<b id="dashAbsent">0</b></div>
+</div>
+<div id="classCards"></div>
+<div class="row" style="margin-top:14px"><button class="primary" onclick="openToday()">📝 আজকের উপস্থিতি নিন</button></div>
+</div>
+<div class="card"><h2>⚠️ কম উপস্থিতির শিক্ষার্থী</h2><div id="dashLow"></div></div>
+<div class="card">
+<h2>☁️ Google Sheet</h2>
+<input id="gsUrl" placeholder="Web App URL (https://script.google.com/...)" style="width:100%" onchange="gsSaveCfg()">
+<input id="gsKey" placeholder="গোপন কোড" style="width:100%;margin-top:8px" onchange="gsSaveCfg()">
+<label class="small" style="display:block;margin-top:10px"><input type="checkbox" id="gsAuto" onchange="gsSaveCfg()"> প্রতিবার save করলে Google Sheet-এ automatic sync হবে</label>
+<div class="row" style="margin-top:10px"><button class="primary" onclick="gsPush(false)">☁️ এখনই Sync</button><button class="secondary" onclick="gsPull(true)">↻ Sheet থেকে Refresh</button></div>
+<div id="gsMsg" class="small" style="margin-top:8px"></div>
+</div>
+</section>
+
+<section id="today">
+<div class="card">
+<div class="row"><h2>আজকের উপস্থিতি</h2><input type="date" id="date"></div>
+<div class="row" style="margin-top:8px"><select id="todayClass" onchange="renderToday()">
+<option value="4+">4+</option><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="all">All Classes</option>
+</select><select id="todaySection" onchange="renderToday()"><option value="all">সব শাখা</option><option value="ক">শাখা ক</option><option value="খ">শাখা খ</option><option value="গ">শাখা গ</option><option value="none">শাখা নেই</option></select></div>
+<div class="row" style="margin:12px 0"><button class="primary" onclick="allPresent()">☑ সবাই উপস্থিত</button><button class="secondary" onclick="saveAttendance()">💾 সংরক্ষণ</button></div>
+<div id="todayList"></div>
+</div>
+</section>
+
+<section id="students" class="hidden">
+<div class="card">
+<h2>Student List</h2>
+<div class="row"><input id="newName" placeholder="Student name"><input id="newRoll" placeholder="Roll" style="width:90px">
+<select id="newClass"><option value="4+">4+</option><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+<select id="newSection"><option value="">শাখা —</option><option value="ক">ক</option><option value="খ">খ</option><option value="গ">গ</option></select>
+<button class="primary" onclick="addStudent()">+ Add</button></div>
+<p class="small">Excel/CSV থেকে নাম আনতে নিচের Import ব্যবহার করুন।</p>
+<input type="file" id="csvFile" accept=".csv,.txt" onchange="importCSV(event)">
+</div>
+<div class="card">
+<h2>📷 ছবি/PDF থেকে Student List আনুন</h2>
+<p class="small">ছবি/PDF দিলে আগে শুধু <b>ক্রমিক/রোল-সহ student row</b> বের করা হবে। বিদ্যালয়ের নাম, শ্রেণি, শাখা, শিক্ষাবর্ষ, শিরোনাম ইত্যাদি বাদ দেওয়ার চেষ্টা করবে। তারপর Preview দেখে ভুল থাকলে ঠিক করে Add করবেন।</p>
+<div class="row">
+<input type="file" id="ocrFile" accept="image/*,application/pdf" onchange="handleOcrFile(event)">
+<select id="ocrClass"><option value="4+">4+</option><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+<select id="ocrSection"><option value="">শাখা —</option><option value="ক">ক</option><option value="খ">খ</option><option value="গ">গ</option></select>
+</div>
+<div id="ocrStatus" class="small" style="margin-top:8px"></div>
+<div id="ocrPreview" style="margin-top:10px"></div>
+<textarea id="ocrResult" style="display:none"></textarea>
+<div class="row" style="margin-top:8px">
+<button class="primary" onclick="importOcrNames()">➕ Preview-এর নামগুলো Student List-এ যোগ করুন</button>
+<button class="secondary" onclick="clearOcrPreview()">✖ মুছে ফেলুন</button>
+</div>
+</div>
+<div class="card">
+<h2>⬆️ Promote Students</h2>
+<div class="row">
+<select id="promoteFrom"><option value="4+">4+</option><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+<span>→</span>
+<select id="promoteTo"><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="পাস আউট">পাস আউট (৫ম শেষ)</option></select>
+<button class="primary" onclick="promoteStudents()">Promote</button>
+</div>
+<p class="small">যেমন: Class 4 → Class 5 দিলে ঐ class-এর সব student একসাথে পরের class-এ যাবে। আগের attendance history থাকবে।</p>
+<div id="promoteList"></div>
+</div>
+<div class="card">
+<div class="row"><h2>Students</h2><select id="studentSectionFilter" onchange="renderStudents()"><option value="all">সব শাখা</option><option value="ক">শাখা ক</option><option value="খ">শাখা খ</option><option value="গ">শাখা গ</option><option value="none">শাখা নেই</option></select><select id="studentClassFilter" onchange="renderStudents()"><option value="all">All Classes</option><option value="পাস আউট">পাস আউট</option><option value="4+">4+</option><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+<div id="studentList"></div></div>
+</section>
+
+<section id="reports" class="hidden">
+<div class="card"><div class="row"><h2>Attendance Report</h2><select id="reportClass" onchange="renderReports()"><option value="all">All Classes</option><option value="4+">4+</option><option value="প্রাক-প্রাথমিক">প্রাক-প্রাথমিক</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div><div id="report"></div></div>
+<div class="card"><h2>Student Calendar</h2>
+<select id="calendarStudent" onchange="renderCalendar()"></select>
+<div id="calendar"></div><div class="legend"><span class="dot green"></span>Present <span class="dot red"></span>Absent</div>
+</div>
+</section>
+
+<section id="follow" class="hidden">
+<div class="card"><h2>⚠️ Follow-up Needed</h2><p class="small">যাদের attendance 75%-এর নিচে।</p><div id="followList"></div></div>
+</section>
+</main>
+
+<script>
+const APP_PASSCODE='1234';
+function unlock(){
+  const v=document.getElementById('passcode').value;
+  if(v===APP_PASSCODE){document.getElementById('lock').style.display='none';sessionStorage.setItem('attendance_unlocked','1')}
+  else document.getElementById('passErr').textContent='Wrong passcode';
+}
+if(sessionStorage.getItem('attendance_unlocked')==='1')document.getElementById('lock').style.display='none';
+document.getElementById('passcode').addEventListener('keydown',e=>{if(e.key==='Enter')unlock()});
+const KEY='attendance_app_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"students":[],"attendance":{},"notes":{}}');
+db.students.forEach(s=>{if(!s.className)s.className='4+'});
+const C4=["সামিহা", "আবির", "ওয়াসিফা", "আলিফ", "নাবিহা", "লিজা", "মরিয়ম", "সোহান", "আরাফ", "জিহাদ", "মাহি", "নাফসা", "রাবেয়া", "স্নেহা", "মার্জিয়া", "ফাতেমা", "জান্নাতুল", "মেহেদী", "জান্নাত", "মাইশা", "জান্নাতুল", "সাব্বির", "লামিয়া", "সিনথিয়া", "সাব্বির", "মোহনা", "অফসরা", "ফাতেমা", "জেবিন", "ফাতেমা", "জান্নাতুল", "জাকিয়া", "নাঈম", "মেহেদী", "রিয়াদ", "রবিউল", "আরিফা", "সিফাত", "তানজিলা", "আফরিন", "মাহফুজ", "আয়েশা", "শুভ", "ইমাম", "জয়িতা", "ফাতেমা", "শাওন", "আব্দুল্লাহ", "ফেরদাউল্লাহ", "দিয়া", "মারিয়া", "তানভির", "মুহাদ"];
+if(!localStorage.getItem('c4list_v1')){
+ C4.forEach((n,i)=>{const id='seed-'+(i+1),roll=String(i+1).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);let s=db.students.find(x=>x.id===id);
+  if(s){s.name=n;s.roll=roll;s.className='4'}else db.students.push({id,name:n,roll,className:'4'})});
+ localStorage.setItem('c4list_v1','1');localStorage.setItem(KEY,JSON.stringify(db));
+}
+if(!localStorage.getItem('c4dedupe_v2')){
+ C4.forEach((n,i)=>{const seed=db.students.find(x=>x.id==='seed-'+(i+1));
+  const old=db.students.find(x=>/^\d+$/.test(x.id)&&+String(x.roll).replace(/[০-৯]/g,c=>'০১২৩৪৫৬৭৮৯'.indexOf(c))===i+1&&(x.className||'4+')==='4+');
+  if(old&&seed){for(const d in db.attendance){const a=db.attendance[d];if(a[seed.id]!==undefined&&a[old.id]===undefined)a[old.id]=a[seed.id];delete a[seed.id]}
+   old.name=seed.name;old.roll=seed.roll;old.className='4';db.students=db.students.filter(x=>x!==seed)}});
+ localStorage.setItem('c4dedupe_v2','1');localStorage.setItem(KEY,JSON.stringify(db));
+}
+const defaultStudentNames = ['সামিহা', 'আবির', 'ওয়াসিফা', 'আলিফ', 'নাবিহা', 'লিজা', 'মরিয়ম', 'সোহান', 'আরাফ', 'জিহাদ', 'মাহি', 'নাফসা', 'রাবেয়া', 'মেহা', 'মারিয়া', 'ফাতেমা', 'জান্নাতুল', 'মেহেদী', 'জান্নাত', 'মাইশা', 'জান্নাতুল', 'সাবির', 'লামিয়া', 'সিনথিয়া', 'সাবির', 'মোহনা', 'আফসারা', 'ফাতেমা', 'জেরিন', 'ফাতেমা', 'জান্নাতুল', 'জাকিয়া', 'নাঈম', 'মেহেদী', 'রিয়াদ', 'রবিউল', 'আরিফা', 'মিফতাহ', 'তানজিলা', 'আফরিন', 'মাহফুজ', 'আয়েশা', 'শুভ', 'ইমাম', 'জয়িতা', 'ফাতেমা', 'শাওন', 'আব্দুল্লাহ', 'ফেরদৌসুল্লাহ', 'দিয়া', 'মারিয়া', 'তানভীর'];
+if(!db.students.length){
+  db.students = defaultStudentNames.map((name,i)=>({id:String(Date.now()+i),name,roll:String(i+1)}));
+  localStorage.setItem(KEY,JSON.stringify(db));
+}
+
+// Class 3, branch ক — names from the supplied attendance-register photos
+const CLASS3_K_NAMES = [
+  'বর্ণিতা','জান্নাত','মোঃ আব্দুল্লাহ','মোঃ কেয়ামত','তুষা','কন্যা','শ্রীমন্ত','জাহিদুল',
+  'জান্নাত','মাহিরা','নিয়াম','হুমায়ূন','হাবিবা','সওদা','জারা','রামায়ন',
+  'মিনি','সারা','তামিম','ম্যারজানা','মালিয়া','রাশেদ','আনিলা','অমরুৎ',
+  'তামিম','সাব্বির','নূর মেঘা জান্নাত','নূরসাফা জাহান','মাইশা','নূরসাফা জাহান নূর',
+  'সুরভী','ইংকর','তানহা','মারজানা আক্তার','অমৃত','আরিফা','নাফিসা','রুম্পা নাফিসা',
+  'মোঃ ইসমান','মোঃ উমর ফারুক','মোঃ আনজীব','কোহানা আক্তার','মোঃ আব্দুল্লাহ',
+  'আয়েশা আক্তার','সুমাইয়া আক্তার','তুহায়ের','তুমায়েত','মাহাবুব আক্তার'
+];
+
+if(!localStorage.getItem('class3_k_seed_v1')){
+  CLASS3_K_NAMES.forEach((name,i)=>{
+    db.students.push({
+      id:'class3-k-'+(i+1),
+      name,
+      roll:String(i+1),
+      className:'3',
+      section:'ক'
+    });
+  });
+  localStorage.setItem('class3_k_seed_v1','1');
+  localStorage.setItem(KEY,JSON.stringify(db));
+}
+
+// Class 2, শাখা ক (আগে টিয়া) — names from the supplied student list PDF
+const CLASS2_TIYA_NAMES = ['আরফান আলিফ','আরাফাত মাহমুদ','অবন্তিকা চক্রবর্তী','তাছলিমা','হুমায়রা বুশরা','সিদরাতুল মুনতাহা','প্রান্তি মনি','আব্দুল সুবহান আরাফ','সামিয়া','অন্বিতা সাহা','তাহরাতুন জান্নাতুন নুবা','জাকিয়া সুলতানা','রুকাইয়া আক্তার','পূজা বিশ্বাস','বিধান চক্রবর্তী','রিয়ামনি','আফিয়া','মীম আক্তার','তানভীর ইসলাম','জান্নাতুল ফেরদৌস','মারুফা আক্তার','নূর আহমেদ','দ্বীপ কুমার বিশ্বাস','আফিফা আক্তার','আয়শা সিদ্দিকা','জাকিয়া আক্তার','ফাতিহা','সামিয়া','রাকিন চৌধুরী','আবু বকর সিদ্দিক','লামিয়া','নাফিস','মরিয়ম','কারিমা','সায়িম','জান্নাতুল মাওয়া','আরমান','সাহেবা','শ্রী শ্রীপর্ণা','ইসহাক','তাহমিদ তাসিন','মাহাদি','আনিকা ফাতেমা','মীম জান্নাতুল','আর্য সেন','ফারিয়া আক্তার','বিজয় ঘোষ','আবু বকর সিদ্দিক','খাদিজা আক্তার','আছিয়া আক্তার','শিরা মনি','মরিয়ম','মিতালী','নুসরাত জাহান'];
+if(!localStorage.getItem('class2_tiya_seed_v1')){
+  CLASS2_TIYA_NAMES.forEach((name,i)=>{
+    db.students.push({
+      id:'class2-tiya-'+(i+1),
+      name,
+      roll:String(i+1),
+      className:'2',
+      section:'ক'
+    });
+  });
+  localStorage.setItem('class2_tiya_seed_v1','1');
+  localStorage.setItem(KEY,JSON.stringify(db));
+}
+
+if(db.students.some(x=>x.section==='টিয়া')){db.students.forEach(x=>{if(x.section==='টিয়া')x.section='ক'});localStorage.setItem(KEY,JSON.stringify(db))}
+
+// Class 4, শাখা খ — names from the supplied attendance-register photos
+const CLASS4_KHA_NAMES = ['মোবাইদা ইসঃ মিথিলা','প্রণামী ঘোষ','মাইমুনা আক্তার','মোঃ মোরসালিন আঃ','তানিমা ইসলাম','ফাইজা আক্তার','মোঃ মারুফ মোঃ ইসলাম','মোঃ আলিফ','মোসাঃ জান্নাতুল ফাতেমা','হালিমা আক্তার','তাসমিম রহঃ আয়াত','ইকরা আঃ ফারহানা','মায়ায়েত আলম মুন্না','আবির রানি','জান্নাতুল ফেরদৌস মোথা','মেহেরিমা রোজা','মীম আক্তার','আয়শা আঃ রোজা','রাইয়ান ইসলাম','মোসাঃ জান্নাতি','মোঃ ইয়াসিন','মোসাঃ সুমাইয়া আঃ','আফরোজা আক্তার','আইয়ুল ইসলাম','নিবির সূত্রধর','ফাহিদ বেপারী','তাহসিনা ইসঃ তানযা','মোঃ এমদাদুল হক','ফাতেমা আঃ আখিরা','সোহানা চৌধুরি','সামিয়া আক্তার','মোঃ মোজাহিদ','মোঃ সানিম ইবনে মনজুর','ফাইজুন নুর ফিহা','সাবিহা তাবাস্সুম','সুরাইয়া আঃ জিয়া','উলয়গত দেওয়ান','রাইজুল ইসঃ রাসুল','সুদীপ সূত্রধর অর্ক','অজিব চন্দ্র দাস','মোঃ ফোরকান আঃ আনান','মোঃ আবিদুল','মোঃ বিল্লাল হোসেন','রাফিয়া আঃ খাদিজা','মিহু আফরিন','আমেনা আক্তার','ফাতেমা আক্তার','হুমায়ুন আবদুল্লাহ','আসিফ মোঃ মাহিন','মোঃ জুনাইদ','মোঃ নিহাদ','মোছাম্মৎ ফায়সা আঃ','সুমাইয়া আক্তার','মাহাদি হাসান','মোঃ হাসিব','মোঃ জামিউল ইসলাম','উম্মে তাহিরা'];
+if(!localStorage.getItem('class4_kha_seed_v1')){
+  CLASS4_KHA_NAMES.forEach((name,i)=>{
+    db.students.push({id:'class4-kha-'+(i+1),name,roll:String(i+1),className:'4',section:'খ'});
+  });
+  localStorage.setItem('class4_kha_seed_v1','1');
+  localStorage.setItem(KEY,JSON.stringify(db));
+}
+
+// Class 4 এর আগের তালিকা (শাখা ছাড়া) → শাখা ক (একবারই চলবে)
+if(!localStorage.getItem('class4_ka_v1')){
+  db.students.forEach(x=>{if((x.className||'4+')==='4'&&!x.section)x.section='ক'});
+  localStorage.setItem('class4_ka_v1','1');
+  localStorage.setItem(KEY,JSON.stringify(db));
+}
+
+const today=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10); document.getElementById('date').value=today;
+document.getElementById('date').onchange=renderToday;
+
+let cloudReady=false;
+let cloudPushTimer=null;
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(db));
+  if(cloudReady && localStorage.getItem('gs_auto')==='1'){
+    clearTimeout(cloudPushTimer);
+    cloudPushTimer=setTimeout(()=>gsPush(true),700);
+  }
+}
+function selectedClass(){return document.getElementById('todayClass')?.value||'4+'}
+function setClass(v){if(document.getElementById('todayClass'))document.getElementById('todayClass').value=v}
+function inClass(s,c,sec){const k=s.className||'4+';if(!(c==='all'?k!=='পাস আউট':k===c))return false;if(!sec||sec==='all')return true;return sec==='none'?!s.section:s.section===sec}
+const SECS=['ক','খ','গ'];
+function selectedSection(){return document.getElementById('todaySection')?.value||'all'}
+function openClass(c,sec){document.getElementById('todayClass').value=c;document.getElementById('todaySection').value=sec;showTab('today',document.querySelectorAll('.tab')[1])}
+function showTab(id,btn){
+ document.querySelectorAll('main>section').forEach(x=>x.classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
+ if(id==='dashboard')renderDashboard();if(id==='today')renderToday();if(id==='students')renderStudents();if(id==='reports')renderReports();if(id==='follow')renderFollow();
+}
+function openToday(){showTab('today',document.querySelectorAll('.tab')[1])}
+const CLN={'প্রাক-প্রাথমিক':'প্রাক-প্রাথমিক','1':'১ম শ্রেণি','2':'২য় শ্রেণি','3':'৩য় শ্রেণি','4':'৪র্থ শ্রেণি','5':'৫ম শ্রেণি','4+':'৪+'};
+function renderDashboard(){
+ const d=document.getElementById('date').value||today, a=db.attendance[d]||{};
+ const cF=document.getElementById('dashClass').value, sF=document.getElementById('dashSection').value;
+ const sel=db.students.filter(s=>inClass(s,cF,sF));
+ document.getElementById('dashTotal').textContent=sel.length;
+ document.getElementById('dashPresent').textContent=sel.filter(s=>a[s.id]===true).length;
+ document.getElementById('dashAbsent').textContent=sel.filter(s=>a[s.id]===false).length;
+ const classes=cF==='all'?['প্রাক-প্রাথমিক','1','2','3','4','5','4+'].filter(c=>db.students.some(s=>inClass(s,c))):[cF];
+ let html='';
+ classes.forEach(c=>{
+  const cs=db.students.filter(s=>inClass(s,c));
+  const rows=SECS.filter(x=>sF==='all'||x===sF).map(x=>{
+   const l=cs.filter(s=>s.section===x);
+   return `<tr class="go" onclick="openClass('${c}','${x}')"><td>শাখা ${x}</td><td class="p">${l.filter(s=>a[s.id]===true).length}</td><td class="a">${l.filter(s=>a[s.id]===false).length}</td></tr>`;
+  }).join('');
+  const nos=sF==='all'?cs.filter(s=>!s.section):[];
+  const extra=nos.length?`<tr class="go" onclick="openClass('${c}','none')"><td>শাখা নেই</td><td class="p">${nos.filter(s=>a[s.id]===true).length}</td><td class="a">${nos.filter(s=>a[s.id]===false).length}</td></tr>`:'';
+  html+=`<div class="ccard"><h3>📚 ${esc(CLN[c]||c)}</h3><table class="ct"><tr><th>শাখা</th><th>উপস্থিত</th><th>অনুপস্থিত</th></tr>${rows}${extra}</table></div>`;
+ });
+ document.getElementById('classCards').innerHTML=html||'<div class="empty">শিক্ষার্থী নেই</div>';
+ const low=db.students.filter(s=>inClass(s,'all')).map(s=>({s,x:stats(s)})).filter(o=>o.x.total&&o.x.pct<75);
+ document.getElementById('dashLow').innerHTML=low.length?low.map(o=>`<div class="student"><div class="name"><b>${esc(o.s.name)}</b><div class="small">রোল ${esc(o.s.roll||'-')} • ${esc(CLN[o.s.className||'4+']||o.s.className)} ${o.s.section?`• শাখা ${esc(o.s.section)}`:''} • উপস্থিত ${o.x.present}/${o.x.total}</div></div><span class="badge warn">${o.x.pct}%</span></div>`).join(''):'<div class="empty">কম উপস্থিতির কোনো শিক্ষার্থী নেই 🎉</div>';
+}
+function renderReports(){
+ let c=document.getElementById('reportClass')?.value||'all';
+ let students=db.students.filter(s=>inClass(s,c));
+ let html='<table><tr><th>Roll</th><th>Student</th><th>Class</th><th>Present</th><th>Absent</th><th>%</th></tr>';
+ students.forEach(s=>{let x=stats(s);html+=`<tr><td>${esc(s.roll||'-')}</td><td>${esc(s.name)}</td><td>${esc(s.className||'4+')}</td><td>${x.present}</td><td>${x.total-x.present}</td><td><span class="badge ${x.pct<75?'warn':''}">${x.pct}%</span></td></tr>`});
+ document.getElementById('report').innerHTML=students.length?html+'</table>':'<div class="empty">No data yet.</div>';
+ let sel=document.getElementById('calendarStudent');sel.innerHTML=students.map(s=>`<option value="${s.id}">${esc(s.name)} — ${esc(s.className||'4+')}</option>`).join('');renderCalendar();
+}
+function renderCalendar(){
+ let id=document.getElementById('calendarStudent').value;if(!id){document.getElementById('calendar').innerHTML='';return}
+ let dates=Object.keys(db.attendance).sort();let html='<div class="calendar">';
+ dates.forEach(d=>{let st=db.attendance[d][id];html+=`<div class="day ${st===true?'present':st===false?'absent':'none'}"><b>${d.slice(8)}</b><br>${st===true?'P':st===false?'A':'-'}</div>`});html+='</div>';
+ document.getElementById('calendar').innerHTML=html||'<div class="empty">Attendance data নেই।</div>';
+}
+function renderFollow(){
+ let arr=db.students.map(s=>({s,x:stats(s)})).filter(o=>o.x.total&&o.x.pct<75);
+ document.getElementById('followList').innerHTML=arr.length?arr.map(o=>`<div class="student"><div class="name"><b>${esc(o.s.name)}</b><div class="small">Present ${o.x.present} / ${o.x.total} days</div></div><span class="badge warn">${o.x.pct}%</span></div>`).join(''):'<div class="empty">এখন কোনো follow-up দরকার নেই 🎉</div>';
+}
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+const bn=x=>+String(x).replace(/[০-৯]/g,d=>'০১২৩৪৫৬৭৮৯'.indexOf(d))||0;
+const byRoll=(a,b)=>bn(a.roll)-bn(b.roll);
+function stats(s){let p=0,t=0;for(const d in db.attendance){const v=db.attendance[d][s.id];if(v===true){p++;t++}else if(v===false)t++}return{present:p,total:t,pct:t?Math.round(p/t*100):0}}
+function renderToday(){
+ const d=document.getElementById('date').value||today,a=db.attendance[d]||{},c=selectedClass();
+ const l=db.students.filter(s=>inClass(s,c,selectedSection())).sort((x,y)=>(x.section||'~').localeCompare(y.section||'~','bn')||byRoll(x,y));
+ document.getElementById('todayList').innerHTML=l.length?l.map(s=>`<label class="student"><input type="checkbox" data-id="${s.id}" ${a[s.id]===true?'checked':''}><div class="name"><b>${esc(s.name)}</b><div class="small">Roll ${esc(s.roll||'-')} • Class ${esc(s.className||'4+')} ${s.section?`• শাখা ${esc(s.section)}`:''}</div></div>${a[s.id]===undefined?'':`<span class="badge ${a[s.id]?'':'warn'}">${a[s.id]?'P':'A'}</span>`}</label>`).join(''):'<div class="empty">Student নেই।</div>';
+}
+function allPresent(){document.querySelectorAll('#todayList input').forEach(x=>x.checked=true)}
+function saveAttendance(){
+ const d=document.getElementById('date').value||today;db.attendance[d]=db.attendance[d]||{};
+ document.querySelectorAll('#todayList input').forEach(x=>db.attendance[d][x.dataset.id]=x.checked);
+ save();renderToday();alert('✅ সংরক্ষণ হয়েছে');
+}
+let _t;function toast(m){let e=document.getElementById('toast');if(!e){e=document.createElement('div');e.id='toast';e.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1e293b;color:#fff;padding:11px 16px;border-radius:10px;font-size:14px;z-index:99;max-width:90%;text-align:center';document.body.appendChild(e)}e.textContent=m;e.style.display='block';clearTimeout(_t);_t=setTimeout(()=>e.style.display='none',2500)}
+window.alert=toast;
+let delId=null;
+let editId=null;
+const CLS=['4+','প্রাক-প্রাথমিক','1','2','3','4','5','পাস আউট'];
+function renderStudents(){
+ const c=document.getElementById('studentClassFilter').value,l=db.students.filter(s=>inClass(s,c,document.getElementById('studentSectionFilter').value)).sort((x,y)=>(x.section||'~').localeCompare(y.section||'~','bn')||byRoll(x,y));
+ document.getElementById('studentList').innerHTML=l.length?l.map(s=>s.id===editId?
+  `<div class="student" style="flex-wrap:wrap"><input id="eName" value="${esc(s.name)}" style="flex:1;min-width:130px"><input id="eRoll" value="${esc(s.roll||'')}" style="width:70px"><select id="eClass">${CLS.map(k=>`<option ${k===(s.className||'4+')?'selected':''}>${k}</option>`).join('')}</select><select id="eSection">${['',...SECS].map(k=>`<option value="${k}" ${k===(s.section||'')?'selected':''}>${k?'শাখা '+k:'শাখা —'}</option>`).join('')}</select><button class="primary" onclick="saveEdit('${s.id}')">💾 Save</button><button class="secondary" onclick="editId=null;renderStudents()">✖</button></div>`:s.id===delId?`<div class="student" style="flex-wrap:wrap"><div class="name"><b>${esc(s.name)}</b><div class="small">Delete করবেন?</div></div><button class="primary" style="background:#dc2626" onclick="delStudent('${s.id}')">হ্যাঁ, Delete</button><button class="secondary" onclick="delId=null;renderStudents()">না</button></div>`:
+  `<div class="student"><div class="name"><b>${esc(s.name)}</b><div class="small">Roll ${esc(s.roll||'-')} • Class ${esc(s.className||'4+')} ${s.section?`• শাখা ${esc(s.section)}`:''}</div></div><button class="secondary" onclick="editId='${s.id}';renderStudents()">✏️</button><button class="secondary" onclick="delId='${s.id}';renderStudents()">🗑</button></div>`).join(''):'<div class="empty">Student নেই।</div>';
+}
+function saveEdit(id){
+ const s=db.students.find(x=>x.id===id),n=document.getElementById('eName').value.trim();
+ if(!s||!n)return alert('নাম খালি রাখা যাবে না');
+ s.name=n;s.roll=document.getElementById('eRoll').value.trim();s.className=document.getElementById('eClass').value;{const sv=document.getElementById('eSection').value;if(sv)s.section=sv;else delete s.section}
+ editId=null;save();renderStudents();renderDashboard();
+}
+function delStudent(id){db.students=db.students.filter(x=>x.id!==id);delId=null;save();renderStudents();renderDashboard();toast('Delete হয়েছে')}
+function addStudent(){
+ const n=document.getElementById('newName').value.trim();if(!n)return;
+ db.students.push({id:'s'+Date.now(),name:n,roll:document.getElementById('newRoll').value.trim(),className:document.getElementById('newClass').value,...(document.getElementById('newSection').value?{section:document.getElementById('newSection').value}:{})});
+ document.getElementById('newName').value='';document.getElementById('newRoll').value='';save();renderStudents();
+}
+function importCSV(e){
+ const f=e.target.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{let n=0;r.result.split(/\r?\n/).forEach((ln,i)=>{const [name,roll,cls]=ln.split(',').map(x=>x.trim());if(!name||(i===0&&/name|নাম/i.test(name)))return;db.students.push({id:'i'+Date.now()+i,name,roll:roll||'',className:cls||document.getElementById('newClass').value});n++});save();renderStudents();alert(n+' জন import হয়েছে')};
+ r.readAsText(f);e.target.value='';
+}
+let promo=null;
+function promoteStudents(){
+ const from=document.getElementById('promoteFrom').value,to=document.getElementById('promoteTo').value;
+ if(from===to)return alert('একই class দেওয়া যাবে না');
+ const l=db.students.filter(s=>(s.className||'4+')===from).sort(byRoll);
+ if(!l.length)return alert(from+' class-এ student নেই');
+ promo={from,to};
+ document.getElementById('promoteList').innerHTML=`<h3>${esc(from)} → ${esc(to)}</h3><p class="small">✅ টিক = পরের class-এ যাবে। যাদের টিক তুলে দেবেন (fail/অনুপস্থিত) তারা ${esc(from)}-এই থাকবে।</p>`+l.map(s=>`<label class="student"><input type="checkbox" data-id="${s.id}" checked><div class="name"><b>${esc(s.name)}</b><div class="small">Roll ${esc(s.roll||'-')}</div></div></label>`).join('')+`<div class="row" style="margin-top:10px"><button class="primary" onclick="confirmPromote()">✅ Confirm</button><button class="secondary" onclick="cancelPromote()">Cancel</button></div>`;
+}
+function cancelPromote(){promo=null;document.getElementById('promoteList').innerHTML=''}
+function confirmPromote(){
+ if(!promo)return;let up=0,stay=0;
+ document.querySelectorAll('#promoteList input').forEach(x=>{const s=db.students.find(y=>y.id===x.dataset.id);if(!s)return;if(x.checked){s.className=promo.to;up++}else stay++});
+ save();cancelPromote();renderStudents();renderDashboard();
+ alert(up+' জন promote, '+stay+' জন আগের class-এ আছে');
+}
+// ---- OCR: image/PDF -> student rows (filtered + preview) ----
+let _ocrLibsLoaded=false, _ocrImgIdx=0, _ocrImgTotal=0;
+function loadScriptOnce(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load fail'));document.head.appendChild(s)})}
+async function ensureOcrLibs(){
+ if(_ocrLibsLoaded)return;
+ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.2/tesseract.min.js');
+ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ _ocrLibsLoaded=true;
+}
+function setOcrStatus(msg){const e=document.getElementById('ocrStatus');if(e)e.textContent=msg}
+const OCR_BN='০১২৩৪৫৬৭৮৯';
+function ocrDigitsToEn(s){return String(s).replace(/[০-৯]/g,d=>OCR_BN.indexOf(d))}
+function ocrIsHeader(s){
+ const x=String(s).replace(/\s+/g,'').toLowerCase();
+ const bad=['বিদ্যালয়','বিদ্যালয়ের','স্কুল','সরকারি','প্রাথমিক','শ্রেণি','শ্রেনি','শাখা','বিভাগ','শিক্ষাবর্ষ','শিক্ষাবছর','রোল','ক্রমিক','নাম','উপস্থিত','অনুপস্থিত','মোট','তারিখ','বিষয়','বিষয়','সেকশন','section','class','school','studentname','serial','rollno'];
+ return bad.some(k=>x.includes(k));
+}
+function cleanOcrName(s){
+ let x=String(s).trim().replace(/^[|,:;\-–—]+|[|,:;\-–—]+$/g,'').replace(/\s{2,}/g,' ');
+ // Remove common trailing table columns only when clearly separated by 2+ spaces or tabs.
+ x=x.replace(/\s{2,}(?:[MF]|ম|পু|ছাত্র|ছাত্রী|বালক|বালিকা)\s*$/i,'');
+ return x.trim();
+}
+function extractStudentRows(text){
+ const rows=[];
+ const seen=new Set();
+ const lines=String(text).split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ // Safe mode: prefer rows beginning with a serial/roll number. This prevents school/class/section headers becoming students.
+ lines.forEach(line=>{
+   if(ocrIsHeader(line))return;
+   const m=line.match(/^\s*([০-৯0-9]{1,3})\s*(?:[.)|:/\-–—]|\s)\s*(.+)$/);
+   if(!m)return;
+   const roll=ocrDigitsToEn(m[1]);
+   let name=cleanOcrName(m[2]);
+   if(!name||ocrIsHeader(name))return;
+   // If OCR captured another numeric column immediately after the name, keep the name portion.
+   name=name.replace(/\s{2,}[০-৯0-9]{1,3}\s*$/,'').trim();
+   if(name.length<2||/^\d+$/.test(name))return;
+   const key=(roll+'|'+name).toLowerCase();
+   if(!seen.has(key)){seen.add(key);rows.push({roll,name})}
+ });
+ // If serial-based extraction found nothing, use conservative name-only fallback.
+ if(rows.length===0){
+   lines.forEach(line=>{
+     let x=cleanOcrName(line);
+     if(!x||ocrIsHeader(x)||x.length<2||x.length>80)return;
+     if(/^[০-৯0-9\s.,:;|\-–—]+$/.test(x))return;
+     // Reject lines that look like page metadata or column headings.
+     if(/(?:তারিখ|শিক্ষাবর্ষ|বিদ্যালয়|স্কুল|শ্রেণি|শাখা|রোল|ক্রমিক|উপস্থিত|অনুপস্থিত|মোট)/i.test(x))return;
+     const key=x.toLowerCase();if(!seen.has(key)){seen.add(key);rows.push({roll:'',name:x})}
+   });
+ }
+ return rows;
+}
+function renderOcrPreview(rows){
+ const box=document.getElementById('ocrPreview');
+ if(!rows.length){box.innerHTML='<div class="empty">কোনো নির্ভরযোগ্য student row পাওয়া যায়নি। পরিষ্কার ছবি/PDF দিয়ে আবার চেষ্টা করুন।</div>';return}
+ box.innerHTML=`<div class="small" style="margin-bottom:6px"><b>${rows.length} জন</b> পাওয়া গেছে। যাদের নিতে চান টিক রাখুন; নাম/রোল এখানেই ঠিক করতে পারবেন।</div>`+
+ rows.map((r,i)=>`<div class="student" style="align-items:center;gap:7px"><input type="checkbox" class="ocrPick" data-i="${i}" checked style="width:auto"><input class="ocrRoll" data-i="${i}" value="${esc(r.roll)}" placeholder="রোল" style="width:65px"><input class="ocrName" data-i="${i}" value="${esc(r.name)}" style="flex:1;min-width:140px"></div>`).join('');
+ document.getElementById('ocrPreview').dataset.rows=JSON.stringify(rows);
+}
+function clearOcrPreview(){document.getElementById('ocrPreview').innerHTML='';document.getElementById('ocrPreview').dataset.rows='[]';setOcrStatus('');document.getElementById('ocrFile').value=''}
+async function handleOcrFile(e){
+ const f=e.target.files[0];if(!f)return;
+ clearOcrPreview();
+ setOcrStatus('⏳ প্রথমবার হলে OCR লাইব্রেরি লোড হচ্ছে (ইন্টারনেট লাগবে)...');
+ try{await ensureOcrLibs()}catch(err){setOcrStatus('❌ ইন্টারনেট সংযোগ ছাড়া এই ফিচার কাজ করবে না।');return}
+ try{
+  let images=[];
+  if(f.type==='application/pdf'){
+   setOcrStatus('📄 PDF পড়া হচ্ছে...');
+   const buf=await f.arrayBuffer();const pdf=await window.pdfjsLib.getDocument({data:buf}).promise;
+   for(let p=1;p<=pdf.numPages;p++){
+    setOcrStatus(`📄 পৃষ্ঠা ${p}/${pdf.numPages} তৈরি হচ্ছে...`);const page=await pdf.getPage(p);
+    const viewport=page.getViewport({scale:2.5});const canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;
+    await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;images.push(canvas);
+   }
+  }else images.push(f);
+  _ocrImgTotal=images.length;
+  const worker=await Tesseract.createWorker('ben',1,{logger:m=>{if(m.status==='recognizing text'&&m.progress!=null){const pg=_ocrImgTotal>1?`পৃষ্ঠা ${_ocrImgIdx+1}/${_ocrImgTotal}, `:'';setOcrStatus(`🔎 OCR চলছে... (${pg}${Math.round(m.progress*100)}%)`)}}});
+  let allText='';
+  for(let i=0;i<images.length;i++){_ocrImgIdx=i;const {data:{text}}=await worker.recognize(images[i]);allText+=text+'\n'}
+  await worker.terminate();
+  const rows=extractStudentRows(allText);renderOcrPreview(rows);
+  setOcrStatus(rows.length?`✅ ${rows.length} জন student row পাওয়া গেছে। Header/শিরোনাম বাদ দেওয়ার চেষ্টা করা হয়েছে।`: '⚠️ নির্ভরযোগ্য student row পাওয়া যায়নি।');
+ }catch(err){console.error(err);setOcrStatus('❌ সমস্যা হয়েছে — পরিষ্কার ছবি/PDF দিয়ে আবার চেষ্টা করুন।')}
+}
+function importOcrNames(){
+ const box=document.getElementById('ocrPreview');
+ const picks=[...box.querySelectorAll('.ocrPick:checked')];
+ if(!picks.length)return alert('কোনো student নির্বাচন করা হয়নি');
+ const cls=document.getElementById('ocrClass').value,sec=document.getElementById('ocrSection').value;
+ let added=0,skipped=0;
+ picks.forEach(ch=>{
+   const i=ch.dataset.i,name=(box.querySelector(`.ocrName[data-i="${i}"]`)||{}).value?.trim()||'';
+   const roll=(box.querySelector(`.ocrRoll[data-i="${i}"]`)||{}).value?.trim()||'';
+   if(!name){skipped++;return}
+   const duplicate=db.students.some(s=>s.name.trim().toLowerCase()===name.toLowerCase()&&(s.className||'4+')===cls&&(s.section||'')===sec);
+   if(duplicate){skipped++;return}
+   db.students.push({id:'ocr'+Date.now()+Math.random().toString(36).slice(2,7),name,roll,className:cls,...(sec?{section:sec}:{})});added++;
+ });
+ save();renderStudents();renderDashboard();clearOcrPreview();
+ alert(`✅ ${added} জন যোগ হয়েছে${skipped?` • ${skipped} জন বাদ গেছে (duplicate/খালি)`:''}`);
+}
+
+renderDashboard();renderToday();renderStudents();
+
+// ---------- Google Sheet sync ----------
+function gsMsg(t){const e=document.getElementById('gsMsg');if(e)e.textContent=t}
+const GS_DEFAULT_URL='https://script.google.com/macros/s/AKfycbzRcGRHYdrNYeHaUT-lthizNmZ0ocfnLvQAlKK8zEGnNeJTSaMPOI9Rv-L_3bx8xGs/exec';
+const GS_DEFAULT_KEY='tarik123';
+function gsLoadUi(){
+  const u=document.getElementById('gsUrl');if(!u)return;
+  if(!localStorage.getItem('gs_url'))localStorage.setItem('gs_url',GS_DEFAULT_URL);
+  if(!localStorage.getItem('gs_key'))localStorage.setItem('gs_key',GS_DEFAULT_KEY);
+  if(!localStorage.getItem('gs_auto'))localStorage.setItem('gs_auto','1');
+  u.value=localStorage.getItem('gs_url')||'';
+  document.getElementById('gsKey').value=localStorage.getItem('gs_key')||'';
+  document.getElementById('gsAuto').checked=localStorage.getItem('gs_auto')==='1';
+}
+function gsSaveCfg(){
+  localStorage.setItem('gs_url',document.getElementById('gsUrl').value.trim());
+  localStorage.setItem('gs_key',document.getElementById('gsKey').value.trim());
+  localStorage.setItem('gs_auto',document.getElementById('gsAuto').checked?'1':'0');
+}
+async function gsPush(auto){
+  gsSaveCfg();
+  const url=localStorage.getItem('gs_url'),key=localStorage.getItem('gs_key');
+  if(!url||!key){if(!auto)gsMsg('আগে Google Sheet connection দিন');return false}
+  if(!auto)gsMsg('⏳ Sheet-এ save হচ্ছে...');
+  try{
+    const r=await fetch(url,{method:'POST',body:JSON.stringify({key,db})});
+    const j=await r.json();
+    if(j.ok){gsMsg('☁️ Google Sheet synced • '+new Date().toLocaleTimeString('bn-BD'));return true}
+    gsMsg('❌ '+(j.error==='wrong key'?'গোপন কোড মিলছে না':(j.error||'সমস্যা হয়েছে')));return false;
+  }catch(e){
+    if(!auto)gsMsg('❌ Internet/connection সমস্যা');
+    return false;
+  }
+}
+async function gsPull(force=false){
+  gsSaveCfg();
+  const url=localStorage.getItem('gs_url'),key=localStorage.getItem('gs_key');
+  if(!url||!key){if(force)gsMsg('আগে Google Sheet connection দিন');return false}
+  if(force && !confirm('Google Sheet-এর latest data এই device-এ আনা হবে। বর্তমান local data বদলাবে। চালিয়ে যাবেন?'))return false;
+  if(force)gsMsg('⏳ Sheet থেকে data আনা হচ্ছে...');
+  try{
+    const r=await fetch(url+(url.includes('?')?'&':'?')+'key='+encodeURIComponent(key));
+    const j=await r.json();
+    if(!j.ok){if(force)gsMsg('❌ '+(j.error==='wrong key'?'গোপন কোড মিলছে না':(j.error||'সমস্যা হয়েছে')));return false}
+    if(j.db){
+      db=j.db;
+      if(!db.students)db.students=[];
+      if(!db.attendance)db.attendance={};
+      if(!db.notes)db.notes={};
+      db.students.forEach(s=>{if(!s.className)s.className='4+'});
+      localStorage.setItem(KEY,JSON.stringify(db));
+      renderDashboard();renderToday();renderStudents();
+      gsMsg('☁️ Sheet থেকে latest data এসেছে');
+      return true;
+    }
+    // First-time setup: Sheet empty, keep this device's existing data and upload it.
+    if(!force) await gsPush(true);
+    else gsMsg('Sheet-এ এখনো কোনো data নেই');
+    return false;
+  }catch(e){
+    if(force)gsMsg('❌ Sheet থেকে data আনা যায়নি — Internet check করুন');
+    return false;
+  }
+}
+async function initCloud(){
+  gsLoadUi();
+  gsMsg('☁️ Google Sheet sync হচ্ছে...');
+  // First load: always pull latest cloud data before allowing automatic pushes.
+  const loaded=await gsPull(false);
+  cloudReady=true;
+  if(loaded){
+    renderDashboard();renderToday();renderStudents();renderReports();renderFollow();
+  }else{
+    // If the sheet was empty or temporarily unavailable, keep local data safely.
+    if(localStorage.getItem('gs_auto')==='1') await gsPush(true);
+  }
+}
+
+// Start cloud sync only after the page and seed data are ready.
+initCloud();
+</script>
+</body></html>
